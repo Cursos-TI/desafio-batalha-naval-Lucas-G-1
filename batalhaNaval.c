@@ -57,7 +57,7 @@ int main() {
         for (int coluna = 0; coluna < TamanhoTabuleiro; coluna++)
         {
             //numero 0 ou 3 com espaço para vizualização clara
-            printf("%2d ", linha);
+            printf("%2d ", tabuleiro[linha][coluna]);
         }
         printf("\n");
     }
