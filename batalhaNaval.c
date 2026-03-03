@@ -1,92 +1,115 @@
 #include <stdio.h>
 
-// Desafio Batalha Naval - MateCheck
-// Nível Aventureiro: Tabuleiro Completo e Navios Diagonais
-
 int main() {
-    // ====================== CONFIGURAÇÕES INICIAIS ======================
-    int TAMANHO = 10;          // Tabuleiro 10x10
-    int TAM_NAVIO = 3;         // Todos os navios têm tamanho 3
+    const int TAM = 10;
+    const int TAM_NAVIO = 3;
 
-    // Matriz do tabuleiro: 0 = Água, 3 = Parte de navio
-    int tabuleiro[10][10] = {0};
+    // ====================== TABULEIRO PRINCIPAL ======================
+    int tabuleiro[10][10] = {0};   // 0 = Água, 3 = Navio, 5 = Área afetada
 
-    // ====================== POSICIONAMENTO DOS NAVIOS ======================
+    // ====================== POSICIONAMENTO DOS 4 NAVIOS ======================
+    // Navio Horizontal
+    int lin_h = 1, col_h = 2;
+    for (int i = 0; i < TAM_NAVIO; i++) tabuleiro[lin_h][col_h + i] = 3;
 
-    // 1. Navio Horizontal (linha 1, colunas 2-4)
-    int lin_h = 1;
-    int col_h = 2;
-    for (int i = 0; i < TAM_NAVIO; i++) {
-        tabuleiro[lin_h][col_h + i] = 3;
-    }
+    // Navio Vertical
+    int col_v = 8, lin_v = 6;
+    for (int i = 0; i < TAM_NAVIO; i++) tabuleiro[lin_v + i][col_v] = 3;
 
-    // 2. Navio Vertical (coluna 8, linhas 6-8)
-    int col_v = 8;
-    int lin_v = 6;
-    for (int i = 0; i < TAM_NAVIO; i++) {
-        tabuleiro[lin_v + i][col_v] = 3;
-    }
+    // Navio Diagonal /
+    int lin_d1 = 3, col_d1 = 1;
+    for (int i = 0; i < TAM_NAVIO; i++) tabuleiro[lin_d1 + i][col_d1 + i] = 3;
 
-    // 3. Navio Diagonal Principal ( / ) → (0,0), (1,1), (2,2)
-    int lin_d1 = 0;
-    int col_d1 = 0;
-    for (int i = 0; i < TAM_NAVIO; i++) {
-        tabuleiro[lin_d1 + i][col_d1 + i] = 3;
-    }
+    // Navio Diagonal \;
+    int lin_d2 = 2, col_d2 = 9;
+    for (int i = 0; i < TAM_NAVIO; i++) tabuleiro[lin_d2 + i][col_d2 - i] = 3;
 
-    // 4. Navio Diagonal Secundária ( \ ) → (2,9), (3,8), (4,7)
-    int lin_d2 = 2;
-    int col_d2 = 9;
-    for (int i = 0; i < TAM_NAVIO; i++) {
-        tabuleiro[lin_d2 + i][col_d2 - i] = 3;
-    }
+    // ====================== HABILIDADES ESPECIAIS (MATRIZES SEPARADAS) ======================
 
-    // ====================== VALIDAÇÃO SIMPLES DE SOBREPOSIÇÃO ======================
-    int sobreposicao = 0;
-    for (int i = 0; i < TAMANHO; i++) {
-        for (int j = 0; j < TAMANHO; j++) {
-            if (tabuleiro[i][j] == 3) {
-                // Conta quantas vezes o número 3 aparece (deveria ser 12 no total)
-                sobreposicao++;
+    // Matrizes 5x5 para cada habilidade (0 = não afeta, 1 = afeta)
+    int cone[5][5] = {0};
+    int cruz[5][5] = {0};
+    int octaedro[5][5] = {0};
+
+    // ------------------- 1. Construção do CONE (com loops aninhados + condicionais) -------------------
+    for (int i = 0; i < 5; i++) {           // linha
+        for (int j = 0; j < 5; j++) {       // coluna
+            if (j >= (2 - i) && j <= (2 + i)) {
+                cone[i][j] = 1;
             }
         }
     }
-    if (sobreposicao != 12) {
-        printf("ERRO: Houve sobreposição de navios!\n");
-        return 1;
+
+    // ------------------- 2. Construção da CRUZ -------------------
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (i == 2 || j == 2) {         // linha do meio ou coluna do meio
+                cruz[i][j] = 1;
+            }
+        }
     }
 
-    // ====================== EXIBIÇÃO DO TABULEIRO ======================
-    printf("\n=== Tabuleiro de Batalha Naval 10x10 ===\n");
-    printf("   ");                     // Espaço para alinhar colunas
-
-    // Cabeçalho das colunas
-    for (int c = 0; c < TAMANHO; c++) {
-        printf("%2d ", c);
+    // ------------------- 3. Construção do OCTAEDRO (diamante) -------------------
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            if (abs(i - 2) + abs(j - 2) <= 2) {   // distância de Manhattan
+                octaedro[i][j] = 1;
+            }
+        }
     }
+
+    // ====================== SOBREPOSIÇÃO DAS HABILIDADES NO TABULEIRO ======================
+    // Ponto de origem de cada habilidade no tabuleiro 10x10 (centro da habilidade)
+    int origem_cone_linha = 4,   origem_cone_coluna = 4;
+    int origem_cruz_linha = 7,   origem_cruz_coluna = 2;
+    int origem_octa_linha = 2,   origem_octa_coluna = 6;
+
+    // Função para aplicar habilidade (reutilizável)
+    void aplicar_habilidade(int hab[5][5], int orig_l, int orig_c) {
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 5; j++) {
+                if (hab[i][j] == 1) {
+                    int linha_tab = orig_l + (i - 2);   // centraliza a matriz 5x5
+                    int coluna_tab = orig_c + (j - 2);
+
+                    // Verifica limites do tabuleiro
+                    if (linha_tab >= 0 && linha_tab < TAM &&
+                        coluna_tab >= 0 && coluna_tab < TAM) {
+                        tabuleiro[linha_tab][coluna_tab] = 5;   // 5 = área afetada
+                    }
+                }
+            }
+        }
+    }
+
+    // Aplica as 3 habilidades
+    aplicar_habilidade(cone, origem_cone_linha, origem_cone_coluna);
+    aplicar_habilidade(cruz, origem_cruz_linha, origem_cruz_coluna);
+    aplicar_habilidade(octaedro, origem_octa_linha, origem_octa_coluna);
+
+    // ====================== EXIBIÇÃO FINAL ======================
+    printf("\n=== TABULEIRO FINAL ===\n");
+    printf("   ");
+    for (int c = 0; c < TAM; c++) printf("%2d ", c);
     printf("\n");
 
-    // Imprime o tabuleiro completo
-    for (int linha = 0; linha < TAMANHO; linha++) {
-        printf("%2d ", linha);         // Número da linha
-
-        for (int coluna = 0; coluna < TAMANHO; coluna++) {
-            printf("%2d ", tabuleiro[linha][coluna]);
+    for (int l = 0; l < TAM; l++) {
+        printf("%2d ", l);
+        for (int c = 0; c < TAM; c++) {
+            printf("%2d ", tabuleiro[l][c]);
         }
         printf("\n");
     }
 
-    // ====================== INFORMAÇÕES DOS NAVIOS ======================
     printf("\nLegenda:\n");
     printf("0 = Água\n");
-    printf("3 = Parte de navio\n\n");
+    printf("3 = Parte de Navio\n");
+    printf("5 = Área afetada por habilidade\n\n");
 
-    printf("Navio 1 - Horizontal : linha %d, colunas %d a %d\n", lin_h, col_h, col_h + TAM_NAVIO - 1);
-    printf("Navio 2 - Vertical   : coluna %d, linhas %d a %d\n", col_v, lin_v, lin_v + TAM_NAVIO - 1);
-    printf("Navio 3 - Diagonal / : começa em (%d,%d) → (%d,%d) → (%d,%d)\n",
-           lin_d1, col_d1, lin_d1+1, col_d1+1, lin_d1+2, col_d1+2);
-    printf("Navio 4 - Diagonal \\ : começa em (%d,%d) → (%d,%d) → (%d,%d)\n",
-           lin_d2, col_d2, lin_d2+1, col_d2-1, lin_d2+2, col_d2-2);
+    printf("Habilidades aplicadas:\n");
+    printf("• Cone     → origem em (%d, %d)\n", origem_cone_linha, origem_cone_coluna);
+    printf("• Cruz     → origem em (%d, %d)\n", origem_cruz_linha, origem_cruz_coluna);
+    printf("• Octaedro → origem em (%d, %d)\n", origem_octa_linha, origem_octa_coluna);
 
     return 0;
 }
